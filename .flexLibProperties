@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<flexLibProperties includeAllClasses="true" useMultiPlatformConfig="false" version="3">
+  <includeClasses>
+    <classEntry path="com.hs.apis.redis.Redis"/>
+    <classEntry path="com.hs.apis.redis.RedisResult"/>
+    <classEntry path="com.hs.apis.redis.events.RedisResultEvent"/>
+    <classEntry path="com.hs.apis.redis.RedisCommands"/>
+    <classEntry path="com.hs.apis.redis.RedisResultType"/>
+    <classEntry path="com.hs.apis.redis.events.RedisErrorEvent"/>
+    <classEntry path="com.hs.apis.redis.events.RedisEvent"/>
+  </includeClasses>
+  <includeResources/>
+  <namespaceManifests/>
+</flexLibProperties>
