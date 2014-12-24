@@ -392,7 +392,7 @@ package com.hs.apis.redis
 				else if( isBulk )
 				{
 					if( bulk )
-						bulk += "\r\n";
+						bulk += EOL;
 					bulk += line;
 
 					if( bulk.length == bulkLen )
