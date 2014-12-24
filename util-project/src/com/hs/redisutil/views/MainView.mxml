@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<views:ViewBase logChanged="viewbase1_logChangedHandler(event)"
+<views:ViewBase logChanged="logChangedHandler(event);"
+	receiverLogChanged="receiverLogChangedHandler(event);"
 	xmlns:fx="http://ns.adobe.com/mxml/2009"
 	xmlns:mx="library://ns.adobe.com/flex/mx"
 	xmlns:s="library://ns.adobe.com/flex/spark"
@@ -13,24 +14,24 @@
 			// protected methods 
 			//=================================
 
-			protected function viewbase1_logChangedHandler( event : Event ) : void
+			protected function logChangedHandler( event : Event ) : void
 			{
-				var delta : Number;
-
 				if( outputWrapper.layout )
 				{
 					outputWrapper.validateNow();
-					delta = outputWrapper.layout.getVerticalScrollPositionDelta( NavigationUnit.END );
+					var delta : Number = outputWrapper.layout.getVerticalScrollPositionDelta( NavigationUnit.END );
 					outputWrapper.layout.verticalScrollPosition += delta;
 				}
+			}
 
+			protected function receiverLogChangedHandler( event : Event ) : void
+			{
 				if( recoutputWrapper.layout )
 				{
 					recoutputWrapper.validateNow();
-					delta = recoutputWrapper.layout.getVerticalScrollPositionDelta( NavigationUnit.END );
+					var delta : Number = recoutputWrapper.layout.getVerticalScrollPositionDelta( NavigationUnit.END );
 					recoutputWrapper.layout.verticalScrollPosition += delta;
 				}
-
 			}
 		]]>
 	</fx:Script>
