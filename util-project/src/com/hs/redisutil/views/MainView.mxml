@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<views:ViewBase logChanged="viewbase1_logChangedHandler(event)"
+	xmlns:fx="http://ns.adobe.com/mxml/2009"
+	xmlns:mx="library://ns.adobe.com/flex/mx"
+	xmlns:s="library://ns.adobe.com/flex/spark"
+	xmlns:views="com.hs.redisutil.views.*">
+
+	<fx:Script>
+		<![CDATA[
+			import spark.core.NavigationUnit;
+
+			//=================================
+			// protected methods 
+			//=================================
+
+			protected function viewbase1_logChangedHandler( event : Event ) : void
+			{
+				var delta : Number;
+
+				if( outputWrapper.layout )
+				{
+					outputWrapper.validateNow();
+					delta = outputWrapper.layout.getVerticalScrollPositionDelta( NavigationUnit.END );
+					outputWrapper.layout.verticalScrollPosition += delta;
+				}
+
+				if( recoutputWrapper.layout )
+				{
+					recoutputWrapper.validateNow();
+					delta = recoutputWrapper.layout.getVerticalScrollPositionDelta( NavigationUnit.END );
+					recoutputWrapper.layout.verticalScrollPosition += delta;
+				}
+
+			}
+		]]>
+	</fx:Script>
+
+
+	<s:VGroup bottom="20"
+		gap="20"
+		left="20"
+		right="20"
+		top="20">
+
+		<s:HGroup verticalAlign="middle">
+
+			<s:Label text="HOST:" />
+
+			<s:TextInput id="hostInput"
+				text="127.0.0.1"
+				width="200" />
+
+			<s:Label text="PORT:" />
+
+			<s:TextInput id="portInput"
+				text="6379"
+				width="80" />
+
+			<s:Button click="redisModel.connect( hostInput.text, int( portInput.text ) );"
+				label="CONNECT" />
+
+			<s:Spacer width="100%" />
+
+			<s:Label text="PASSWORD:" />
+
+			<s:TextInput id="pwdInput"
+				enter="redisModel.authenticate( pwdInput.text );" />
+
+			<s:Button click="redisModel.authenticate( pwdInput.text );"
+				label="AUTHENTICATE" />
+		</s:HGroup>
+
+		<s:Label text="ex - subscribe ch1,ch2,ch3" />
+
+		<s:TextInput id="commandInput"
+			enter="redisModel.execute( commandInput.text );commandInput.text = '';"
+			width="100%" />
+
+		<s:HGroup height="100%"
+			width="100%">
+
+			<s:Scroller id="scroller"
+				height="100%"
+				width="50%">
+
+				<s:Group id="outputWrapper"
+					clipAndEnableScrolling="true">
+
+					<s:RichEditableText id="output"
+						editable="false"
+						selectable="true"
+						text="{ redisModel.log }"
+						width="100%" />
+				</s:Group>
+			</s:Scroller>
+
+			<s:VGroup height="100%"
+				width="50%">
+
+				<s:Label text="RECEIVER OUTPUT" />
+
+				<s:Scroller id="recscroller"
+					height="100%"
+					width="100%">
+
+					<s:Group id="recoutputWrapper"
+						clipAndEnableScrolling="true">
+
+						<s:RichEditableText id="recoutput"
+							editable="false"
+							selectable="true"
+							text="{ redisModel.receiverLog }"
+							width="100%" />
+					</s:Group>
+				</s:Scroller>
+			</s:VGroup>
+		</s:HGroup>
+	</s:VGroup>
+</views:ViewBase>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication minHeight="750"
+	minWidth="1200"
+	xmlns:fx="http://ns.adobe.com/mxml/2009"
+	xmlns:mx="library://ns.adobe.com/flex/mx"
+	xmlns:s="library://ns.adobe.com/flex/spark"
+	xmlns:views="com.hs.redisutil.views.*">
+
+	<views:MainView id="mainView" />
+
+</s:WindowedApplication>
