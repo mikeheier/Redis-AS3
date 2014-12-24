@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<views:ViewBase logChanged="logChangedHandler(event);"
-	receiverLogChanged="receiverLogChangedHandler(event);"
+<views:ViewBase logChanged="updateScrollPosition(outputWrapper);"
+	receiverLogChanged="updateScrollPosition(recoutputWrapper);"
 	xmlns:fx="http://ns.adobe.com/mxml/2009"
 	xmlns:mx="library://ns.adobe.com/flex/mx"
 	xmlns:s="library://ns.adobe.com/flex/spark"
@@ -14,23 +14,13 @@
 			// protected methods 
 			//=================================
 
-			protected function logChangedHandler( event : Event ) : void
+			protected function updateScrollPosition( wrapper : Group ) : void
 			{
-				if( outputWrapper.layout )
+				if( wrapper.layout )
 				{
-					outputWrapper.validateNow();
-					var delta : Number = outputWrapper.layout.getVerticalScrollPositionDelta( NavigationUnit.END );
-					outputWrapper.layout.verticalScrollPosition += delta;
-				}
-			}
-
-			protected function receiverLogChangedHandler( event : Event ) : void
-			{
-				if( recoutputWrapper.layout )
-				{
-					recoutputWrapper.validateNow();
-					var delta : Number = recoutputWrapper.layout.getVerticalScrollPositionDelta( NavigationUnit.END );
-					recoutputWrapper.layout.verticalScrollPosition += delta;
+					wrapper.validateNow();
+					var delta : Number = wrapper.layout.getVerticalScrollPositionDelta( NavigationUnit.END );
+					wrapper.layout.verticalScrollPosition += delta;
 				}
 			}
 		]]>
