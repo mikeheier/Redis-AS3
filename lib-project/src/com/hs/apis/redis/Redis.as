@@ -118,7 +118,7 @@ package com.hs.apis.redis
 
 			if( _host )
 			{
-				_socket = new Socket( _host , _port );
+				_socket = new Socket();
 				_socket.addEventListener( Event.CLOSE , socket_eventHandler );
 				_socket.addEventListener( Event.CONNECT , socket_eventHandler );
 				_socket.addEventListener( IOErrorEvent.IO_ERROR , socket_eventHandler );
@@ -353,6 +353,7 @@ package com.hs.apis.redis
 			var char : String;
 			var isBulk : Boolean;
 			var bulkLen : int;
+			var bulk : String;
 			var aryLen : int;
 			var ary : Array;
 			var aryStr : String;
@@ -390,9 +391,17 @@ package com.hs.apis.redis
 				}
 				else if( isBulk )
 				{
-					addResult( line , RedisResultType.STRING_BULK , results , ary );
-					bulkLen = 0;
-					isBulk = false;
+					if( bulk )
+						bulk += "\r\n";
+					bulk += line;
+
+					if( bulk.length == bulkLen )
+					{
+						addResult( bulk , RedisResultType.STRING_BULK , results , ary );
+						bulkLen = 0;
+						isBulk = false;
+						bulk = null;
+					}
 				}
 				else
 				{
@@ -403,12 +412,13 @@ package com.hs.apis.redis
 							addResult( line.substr( line.indexOf( " " ) + 1 , line.length ) , RedisResultType.ERROR , errors , null );
 							break sw1;
 						case "+": //simple string byte
-							addResult( int( line.substr( 1 , line.length ) ) , RedisResultType.STRING_SIMPLE , results , ary );
+							addResult( line.substr( 1 , line.length ) , RedisResultType.STRING_SIMPLE , results , ary );
 							break sw1;
 						case ":": //int byte
-							addResult( line.substr( 1 , line.length ) , RedisResultType.INTEGER , results , ary );
+							addResult( int( line.substr( 1 , line.length ) ) , RedisResultType.INTEGER , results , ary );
 							break sw1;
 						case "$":
+							bulk = "";
 							bulkLen = uint( line.substr( 1 , line.length ) );
 							isBulk = true;
 							continue;
