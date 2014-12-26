@@ -8,8 +8,11 @@ package com.hs.redisutil.model
 	import com.hs.apis.redis.RedisCommands;
 	import com.hs.apis.redis.events.RedisErrorEvent;
 	import com.hs.apis.redis.events.RedisResultEvent;
+	import com.hs.redisutil.components.PageLinkGroup;
+	import com.hs.redisutil.events.PageLinkGroupEvent;
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
+	import mx.utils.StringUtil;
 
 	[Event( name = "logChanged" , type = "flash.events.Event" )]
 	[Event( name = "receiverLogChanged" , type = "flash.events.Event" )]
@@ -54,7 +57,7 @@ package com.hs.redisutil.model
 		// private static properties 
 		//=================================
 
-		private static const LOG_MAX_LEN : uint = 10000;
+		private static const LOG_MAX_LEN : uint = 500;
 
 
 		//=================================
@@ -62,6 +65,10 @@ package com.hs.redisutil.model
 		//=================================
 
 		public var log : String;
+
+		public var outputPageDetails : String;
+
+		public var recPageDetails : String;
 
 		protected var _receiver : Redis;
 
@@ -85,6 +92,10 @@ package com.hs.redisutil.model
 
 		protected var _logCache : Array;
 
+		protected var _logPageLinkGroup : PageLinkGroup;
+
+		protected var _recPageLinkGroup : PageLinkGroup;
+
 		protected var _receiverLogCache : Array;
 
 		//=================================
@@ -105,34 +116,12 @@ package com.hs.redisutil.model
 
 		public function appendLog( value : String ) : void
 		{
-			if( log.length > 0 && value && value.substr( 0 , 2 ) == ">>" )
-				log += "\n";
-			log += value + "\n";
-
-			if( log.length > LOG_MAX_LEN )
-			{
-				var tmp : String = log.substr( 0 , LOG_MAX_LEN );
-				_logCache.push( tmp );
-				log = log.substr( LOG_MAX_LEN , log.length );
-			}
-
-			dispatchEvent( new Event( "logChanged" ) );
+			_appendLog( "log" , value );
 		}
 
 		public function appendReceiverLog( value : String ) : void
 		{
-			if( receiverLog.length > 0 && value && value.substr( 0 , 2 ) == ">>" )
-				receiverLog += "\n";
-			receiverLog += value + "\n";
-
-			if( receiverLog.length > LOG_MAX_LEN )
-			{
-				var tmp : String = log.substr( 0 , LOG_MAX_LEN );
-				_receiverLogCache.push( tmp );
-				receiverLog = receiverLog.substr( LOG_MAX_LEN , receiverLog.length );
-			}
-
-			dispatchEvent( new Event( "receiverLogChanged" ) );
+			_appendLog( "receiverLog" , value );
 		}
 
 		public function authenticate( password : String ) : void
@@ -157,7 +146,12 @@ package com.hs.redisutil.model
 			if( !command )
 				return;
 
+			command = StringUtil.trim( command );
 			var ary : Array = command.split( " " );
+			ary.forEach( function( item : String , index : int , array : Array ) : void
+			{
+				ary[ index ] = StringUtil.trim( item );
+			} );
 
 			if( ary && ary.length > 0 )
 			{
@@ -181,13 +175,86 @@ package com.hs.redisutil.model
 			}
 		}
 
+		public function initPageLinkGroups( logPageLinkGroup : PageLinkGroup , recPageLinkGroup : PageLinkGroup ) : void
+		{
+			_recPageLinkGroup = recPageLinkGroup;
+			_logPageLinkGroup = logPageLinkGroup;
+		}
+
+		public function outputPage_activePageSelectedHandler( event : PageLinkGroupEvent ) : void
+		{
+			outputPageDetails = null;
+		}
+
+		public function outputPage_selectedHandler( event : PageLinkGroupEvent ) : void
+		{
+			outputPageDetails = _logCache[ event.page - 1 ];
+		}
+
+		public function recPage_activePageSelectedHandler( event : PageLinkGroupEvent ) : void
+		{
+			recPageDetails = null;
+		}
+
+		public function recPage_selectedHandler( event : PageLinkGroupEvent ) : void
+		{
+			recPageDetails = _receiverLogCache[ event.page - 1 ];
+		}
+
 		//=================================
 		// protected methods 
 		//=================================
 
+
+
+		protected function _appendLog( logName : String , value : String ) : void
+		{
+			var _l : String = this[ logName ];
+
+			if( _l.length > 0 && value && value.substr( 0 , 2 ) == ">>" )
+				_l += "\n";
+			_l += value + "\n";
+
+			var lines : Array = _l.split( "\n" );
+
+			if( lines.length > LOG_MAX_LEN )
+			{
+				var tmp : Array = lines.slice( 0 , LOG_MAX_LEN );
+				var lc : Array = getLogCache( logName );
+				lc.push( tmp.join( "\n" ) );
+				getPageLinkGroup( logName ).addPage( lc.length );
+				_l = lines.slice( LOG_MAX_LEN , lines.length ).join( "\n" );
+			}
+
+			this[ logName ] = _l
+
+			dispatchEvent( new Event( logName + "Changed" ) );
+		}
+
+		protected function getLogCache( logName : String ) : Array
+		{
+			switch( logName )
+			{
+				case "receiverLog":
+					return _receiverLogCache;
+				default:
+					return _logCache;
+			}
+		}
+
+		protected function getPageLinkGroup( logName : String ) : PageLinkGroup
+		{
+			switch( logName )
+			{
+				case "receiverLog":
+					return _recPageLinkGroup;
+				default:
+					return _logPageLinkGroup;
+			}
+		}
+
 		protected function receiver_connectedHandler( event : Event ) : void
 		{
-
 		}
 
 		protected function receiver_errorHandler( event : RedisErrorEvent ) : void
@@ -205,8 +272,7 @@ package com.hs.redisutil.model
 
 		protected function redis_connectedHandler( event : Event ) : void
 		{
-			// TODO Auto-generated method stub
-
+			appendLog( ">> connected: " + _redis.host + ":" + _redis.port );
 		}
 
 		protected function redis_errorHandler( event : RedisErrorEvent ) : void

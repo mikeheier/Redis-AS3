@@ -6,6 +6,23 @@
 	xmlns:s="library://ns.adobe.com/flex/spark"
 	xmlns:views="com.hs.redisutil.views.*">
 
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace views "com.hs.redisutil.views.*";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		
+		s|Label, s|RichEditableText
+		{
+			color: #FFFFFF;
+		}
+		
+		s|TextInput s|RichEditableText, s|Button s|Label
+		{
+			color: #000000;
+		}
+		
+	</fx:Style>
+
 	<views:MainView id="mainView" />
 
 </s:WindowedApplication>
