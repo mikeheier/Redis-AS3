@@ -16,6 +16,7 @@ package com.hs.apis.redis
 
 	[Event( name = "error" , type = "com.hs.apis.redis.events.RedisErrorEvent" )]
 	[Event( name = "result" , type = "com.hs.apis.redis.events.RedisResultEvent" )]
+	[Event( name = "closed" , type = "flash.events.Event" )]
 	[Event( name = "connected" , type = "flash.events.Event" )]
 	public class Redis extends EventDispatcher
 	{
@@ -165,12 +166,14 @@ package com.hs.apis.redis
 		public function execute( command : String , params : Array = null ) : void
 		{
 			if( !command )
-				throw new Error( "Redis.execute >> command not passed in" );
+			{
+				dispatchError( "null command" );
+				return;
+			}
 
 			if( !_socket || !_socket.connected )
 			{
-				//throw error?
-				trace( "socket not connected" );
+				dispatchError( "socket not connected" );
 				return;
 			}
 
@@ -303,7 +306,7 @@ package com.hs.apis.redis
 		/**
 		 * Removes all channel subscriptions.
 		 *
-		 * @return returns the all the channels that were subscribed to
+		 * @return returns all the channels that were subscribed to
 		 *
 		 */
 		public function unsubscribeAll() : Vector.<String>
@@ -329,6 +332,11 @@ package com.hs.apis.redis
 		//=================================
 		// protected methods 
 		//=================================
+
+		protected function dispatchError( error : String ) : void
+		{
+			dispatchEvent( new RedisErrorEvent( error , _socket ) );
+		}
 
 		protected function log( ... args ) : void
 		{
@@ -379,13 +387,13 @@ package com.hs.apis.redis
 				if( i == lines.length - 1
 					&& ( !terminated
 					|| ( ary && ary.length != aryLen )
-					|| isBulk && line.length != bulkLen ) )
+					|| isBulk && bulk.length != bulkLen ) )
 				{
 					//are we building an array?
 					if( ary )
 						_previousPacketFragment = aryStr;
 					else if( isBulk )
-						_previousPacketFragment = "$" + bulkLen + EOL + line;
+						_previousPacketFragment = "$" + bulkLen + EOL + bulk;
 					else //else is simple
 						_previousPacketFragment = line;
 				}
@@ -476,7 +484,7 @@ package com.hs.apis.redis
 			if( pr.errors.length > 0 )
 			{
 				for each( var err : RedisResult in pr.errors )
-					dispatchEvent( new RedisErrorEvent( err.result , _socket ) );
+					dispatchError( err.result );
 			}
 			else
 				dispatchEvent( new RedisResultEvent( pr.results , _socket ) );
@@ -490,6 +498,14 @@ package com.hs.apis.redis
 			{
 				case Event.CONNECT:
 					dispatchEvent( new Event( "connected" ) );
+					break;
+
+				case Event.CLOSE:
+					dispatchEvent( new Event( "closed" ) );
+					break;
+
+				case IOErrorEvent.IO_ERROR:
+					dispatchError( IOErrorEvent( event ).text );
 					break;
 			}
 		}
