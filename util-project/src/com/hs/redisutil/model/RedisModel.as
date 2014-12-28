@@ -206,7 +206,7 @@ package com.hs.redisutil.model
 				params = tmp ? tmp.split( "," ) : null;
 
 				if( cmd.toLocaleUpperCase() == RedisCommands.AUTH )
-					authenticate( params.join( "" ) );
+					authenticate( params ? params.join( "" ) : "" );
 				else
 				{
 					addToHistory( command );
