@@ -387,7 +387,7 @@ package com.hs.apis.redis
 				if( i == lines.length - 1
 					&& ( !terminated
 					|| ( ary && ary.length != aryLen )
-					|| isBulk && bulk.length != bulkLen ) )
+					|| ( isBulk && bulkLen > 0 && bulk.length != bulkLen ) ) )
 				{
 					//are we building an array?
 					if( ary )
@@ -403,7 +403,8 @@ package com.hs.apis.redis
 						bulk += EOL;
 					bulk += line;
 
-					if( bulk.length == bulkLen )
+					if( bulk.length == bulkLen
+						|| bulkLen == -1 )
 					{
 						addResult( bulk , RedisResultType.STRING_BULK , results , ary );
 						bulkLen = 0;
