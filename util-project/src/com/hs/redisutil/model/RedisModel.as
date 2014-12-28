@@ -12,7 +12,13 @@ package com.hs.redisutil.model
 	import com.hs.redisutil.events.PageLinkGroupEvent;
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
+	import flash.events.KeyboardEvent;
+	import flash.events.MouseEvent;
+	import flash.net.URLRequest;
+	import flash.net.navigateToURL;
+	import flash.ui.Keyboard;
 	import mx.utils.StringUtil;
+	import spark.components.TextInput;
 
 	[Event( name = "logChanged" , type = "flash.events.Event" )]
 	[Event( name = "receiverLogChanged" , type = "flash.events.Event" )]
@@ -30,7 +36,6 @@ package com.hs.redisutil.model
 
 			if( _instance )
 				throw new Error( "this is a singleton" );
-
 			_receiver = new Redis( "127.0.0.1" );
 			_receiver.addEventListener( "connected" , receiver_connectedHandler );
 			_receiver.addEventListener( RedisResultEvent.RESULT , receiver_resultHandler );
@@ -41,6 +46,8 @@ package com.hs.redisutil.model
 			_redis.addEventListener( RedisResultEvent.RESULT , redis_resultHandler );
 			_redis.addEventListener( RedisErrorEvent.ERROR , redis_errorHandler );
 
+			_history = Vector.<String>( [] );
+			_currentHistoryIndex = -1;
 			_logCache = [];
 			_receiverLogCache = [];
 			log = "";
@@ -90,6 +97,9 @@ package com.hs.redisutil.model
 		// protected properties 
 		//=================================
 
+		protected var _currentHistoryIndex : int;
+
+		protected var _history : Vector.<String>;
 		protected var _logCache : Array;
 
 		protected var _logPageLinkGroup : PageLinkGroup;
@@ -106,7 +116,6 @@ package com.hs.redisutil.model
 		{
 			if( !_instance )
 				_instance = new RedisModel();
-
 			return _instance;
 		}
 
@@ -126,17 +135,52 @@ package com.hs.redisutil.model
 
 		public function authenticate( password : String ) : void
 		{
+			addToHistory( "auth " + password );
 			_receiver.authenticate( password );
-
 			appendLog( ">> auth " + password );
 			_redis.authenticate( password );
+		}
+
+		public function commandInput_keyDownHandler( event : KeyboardEvent ) : void
+		{
+			var input : TextInput = event.currentTarget as TextInput;
+
+			if( event.keyCode == Keyboard.ESCAPE )
+				input.text = "";
+			else if( _history.length )
+			{
+				var setInput : Boolean;
+
+				if( event.keyCode == Keyboard.UP )
+				{
+					setInput = true;
+					_currentHistoryIndex++;
+
+					if( _currentHistoryIndex >= _history.length )
+						_currentHistoryIndex = 0;
+				}
+				else if( event.keyCode == Keyboard.DOWN )
+				{
+					setInput = true;
+					_currentHistoryIndex--;
+
+					if( _currentHistoryIndex < 0 )
+						_currentHistoryIndex = _history.length - 1;
+				}
+
+				if( setInput )
+				{
+					input.text = _history[ _currentHistoryIndex ];
+					input.selectRange( input.text.length , input.text.length );
+					input.setFocus();
+				}
+			}
 		}
 
 		public function connect( host : String , port : uint ) : void
 		{
 			_receiver.init( host , port );
 			_receiver.connect();
-
 			_redis.init( host , port );
 			_redis.connect();
 		}
@@ -148,27 +192,30 @@ package com.hs.redisutil.model
 
 			command = StringUtil.trim( command );
 			var ary : Array = command.split( " " );
-			ary.forEach( function( item : String , index : int , array : Array ) : void
-			{
-				ary[ index ] = StringUtil.trim( item );
-			} );
 
 			if( ary && ary.length > 0 )
 			{
+				ary.forEach( function( item : String , index : int , array : Array ) : void
+				{
+					ary[ index ] = StringUtil.trim( item );
+				} );
+
 				var cmd : String = ary[ 0 ];
 				var params : Array = ary.slice( 1 , ary.length );
 				var tmp : String = params.join( " " );
 				params = tmp ? tmp.split( "," ) : null;
 
-
 				if( cmd.toLocaleUpperCase() == RedisCommands.AUTH )
 					authenticate( params.join( "" ) );
 				else
 				{
+					addToHistory( command );
 					appendLog( ">> " + command );
 
 					if( cmd.toLocaleUpperCase() == RedisCommands.SUBSCRIBE )
 						_receiver.subscribe.apply( null , params );
+					else if( cmd.toLocaleUpperCase() == RedisCommands.UNSUBSCRIBE )
+						_receiver.unsubscribe.apply( null , params );
 					else
 						_redis.execute( cmd , params );
 				}
@@ -201,11 +248,19 @@ package com.hs.redisutil.model
 			recPageDetails = _receiverLogCache[ event.page - 1 ];
 		}
 
+		public function redisCommandLink_clickHandler( event : MouseEvent ) : void
+		{
+			navigateToURL( new URLRequest( "http://redis.io/commands" ) );
+		}
+
+		public function redisLink_clickHandler( event : MouseEvent ) : void
+		{
+			navigateToURL( new URLRequest( "http://redis.io" ) );
+		}
+
 		//=================================
 		// protected methods 
 		//=================================
-
-
 
 		protected function _appendLog( logName : String , value : String ) : void
 		{
@@ -214,7 +269,6 @@ package com.hs.redisutil.model
 			if( _l.length > 0 && value && value.substr( 0 , 2 ) == ">>" )
 				_l += "\n";
 			_l += value + "\n";
-
 			var lines : Array = _l.split( "\n" );
 
 			if( lines.length > LOG_MAX_LEN )
@@ -225,10 +279,16 @@ package com.hs.redisutil.model
 				getPageLinkGroup( logName ).addPage( lc.length );
 				_l = lines.slice( LOG_MAX_LEN , lines.length ).join( "\n" );
 			}
-
 			this[ logName ] = _l
-
 			dispatchEvent( new Event( logName + "Changed" ) );
+		}
+
+		protected function addToHistory( value : String ) : void
+		{
+			_currentHistoryIndex = -1;
+
+			if( _history.indexOf( value ) == -1 )
+				_history.push( value );
 		}
 
 		protected function getLogCache( logName : String ) : Array

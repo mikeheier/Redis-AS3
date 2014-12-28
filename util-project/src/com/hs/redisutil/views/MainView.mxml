@@ -76,13 +76,40 @@
 				label="AUTHENTICATE" />
 		</s:HGroup>
 
-		<s:VGroup gap="0"
+		<s:VGroup gap="4"
 			width="100%">
 
-			<s:Label text="ex - subscribe ch1,ch2,ch3" />
+			<s:HGroup width="100%">
+
+				<s:Label text="[ ex - subscribe ch1,ch2,ch3 ] :: [ esc: clear ] :: [ history: up,down ]" />
+
+				<s:Spacer width="100%" />
+
+				<s:HGroup>
+
+					<s:Label id="redisLink"
+						buttonMode="true"
+						click="redisModel.redisLink_clickHandler( event );"
+						mouseOut="redisLink.setStyle( 'textDecoration', 'none' );"
+						mouseOver="redisLink.setStyle( 'textDecoration', 'underline' );"
+						text="redis"
+						useHandCursor="true" />
+
+					<s:Label text="|" />
+
+					<s:Label id="redisCommandLink"
+						buttonMode="true"
+						click="redisModel.redisCommandLink_clickHandler( event );"
+						mouseOut="redisCommandLink.setStyle( 'textDecoration', 'none' );"
+						mouseOver="redisCommandLink.setStyle( 'textDecoration', 'underline' );"
+						text="commands"
+						useHandCursor="true" />
+				</s:HGroup>
+			</s:HGroup>
 
 			<s:TextInput id="commandInput"
 				enter="redisModel.execute( commandInput.text );commandInput.text = '';"
+				keyDown="redisModel.commandInput_keyDownHandler( event );"
 				width="100%" />
 		</s:VGroup>
 
