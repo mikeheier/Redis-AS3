@@ -43,6 +43,7 @@ package com.hs.redisutil.model
 
 			_redis = new Redis( "127.0.0.1" );
 			_redis.addEventListener( "connected" , redis_connectedHandler );
+			_redis.addEventListener( "disconnected" , redis_disconnectedHandler );
 			_redis.addEventListener( RedisResultEvent.RESULT , redis_resultHandler );
 			_redis.addEventListener( RedisErrorEvent.ERROR , redis_errorHandler );
 
@@ -333,6 +334,11 @@ package com.hs.redisutil.model
 		protected function redis_connectedHandler( event : Event ) : void
 		{
 			appendLog( ">> connected: " + _redis.host + ":" + _redis.port );
+		}
+
+		protected function redis_disconnectedHandler( event : Event ) : void
+		{
+			appendLog( ">> disconnected: " + _redis.host + ":" + _redis.port );
 		}
 
 		protected function redis_errorHandler( event : RedisErrorEvent ) : void

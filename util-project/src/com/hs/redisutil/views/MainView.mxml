@@ -65,6 +65,15 @@
 			<s:Button click="redisModel.connect( hostInput.text, int( portInput.text ) );"
 				label="CONNECT" />
 
+			<s:Ellipse height="16"
+				width="16">
+
+				<s:fill>
+
+					<s:SolidColor color="{ redisModel.redis.connected ? 0x00ff00 : 0xff0000 }" />
+				</s:fill>
+			</s:Ellipse>
+
 			<s:Spacer width="100%" />
 
 			<s:Label text="PASSWORD:" />
