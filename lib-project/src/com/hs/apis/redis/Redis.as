@@ -18,6 +18,7 @@ package com.hs.apis.redis
 	[Event( name = "result" , type = "com.hs.apis.redis.events.RedisResultEvent" )]
 	[Event( name = "closed" , type = "flash.events.Event" )]
 	[Event( name = "connected" , type = "flash.events.Event" )]
+	[Event( name = "disconnected" , type = "flash.events.Event" )]
 	public class Redis extends EventDispatcher
 	{
 
@@ -42,6 +43,14 @@ package com.hs.apis.redis
 		//=================================
 		// public properties 
 		//=================================
+
+		[Bindable( "closed" )]
+		[Bindable( "connected" )]
+		[Bindable( "disconnected" )]
+		public function get connected() : Boolean
+		{
+			return _socket && _socket.connected;
+		}
 
 		protected var _host : String;
 
@@ -100,6 +109,7 @@ package com.hs.apis.redis
 				{
 					unsubscribeAll();
 					_socket.close();
+					dispatchEvent( new Event( "closed" ) );
 				}
 
 				_socket.removeEventListener( Event.CLOSE , socket_eventHandler );
@@ -120,13 +130,9 @@ package com.hs.apis.redis
 			if( _host )
 			{
 				_socket = new Socket();
-				_socket.addEventListener( Event.CLOSE , socket_eventHandler );
 				_socket.addEventListener( Event.CONNECT , socket_eventHandler );
 				_socket.addEventListener( IOErrorEvent.IO_ERROR , socket_eventHandler );
 				_socket.addEventListener( SecurityErrorEvent.SECURITY_ERROR , socket_eventHandler );
-
-				_socket.addEventListener( OutputProgressEvent.OUTPUT_PROGRESS , socket_outPutProgressHandler );
-				_socket.addEventListener( ProgressEvent.SOCKET_DATA , socket_dataHandler );
 
 				_socket.connect( _host , _port );
 			}
@@ -498,11 +504,20 @@ package com.hs.apis.redis
 			switch( event.type )
 			{
 				case Event.CONNECT:
+
+					_socket.addEventListener( OutputProgressEvent.OUTPUT_PROGRESS , socket_outPutProgressHandler );
+					_socket.addEventListener( ProgressEvent.SOCKET_DATA , socket_dataHandler );
+
+					//the close event is dispatched when the server closes the connection
+					//see http://help.adobe.com/en_US/FlashPlatform/reference/actionscript/3/flash/net/Socket.html#close%28%29
+					_socket.addEventListener( Event.CLOSE , socket_eventHandler );
+
 					dispatchEvent( new Event( "connected" ) );
 					break;
 
 				case Event.CLOSE:
-					dispatchEvent( new Event( "closed" ) );
+					close();
+					dispatchEvent( new Event( "disconnected" ) );
 					break;
 
 				case IOErrorEvent.IO_ERROR:
