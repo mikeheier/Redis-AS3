@@ -18,6 +18,7 @@ package com.hs.redisutil.model
 	import flash.net.navigateToURL;
 	import flash.ui.Keyboard;
 	import mx.utils.StringUtil;
+	import mx.utils.UIDUtil;
 	import spark.components.TextInput;
 
 	[Event( name = "logChanged" , type = "flash.events.Event" )]
@@ -36,6 +37,9 @@ package com.hs.redisutil.model
 
 			if( _instance )
 				throw new Error( "this is a singleton" );
+
+			_uid = UIDUtil.createUID();
+
 			_receiver = new Redis( "127.0.0.1" );
 			_receiver.addEventListener( "connected" , receiver_connectedHandler );
 			_receiver.addEventListener( RedisResultEvent.RESULT , receiver_resultHandler );
@@ -108,6 +112,8 @@ package com.hs.redisutil.model
 		protected var _recPageLinkGroup : PageLinkGroup;
 
 		protected var _receiverLogCache : Array;
+
+		protected var _uid : String;
 
 		//=================================
 		// public static methods 
@@ -316,6 +322,7 @@ package com.hs.redisutil.model
 
 		protected function receiver_connectedHandler( event : Event ) : void
 		{
+			receiver.execute( "client" , [ "setname" , "redis-util-rec:" + _uid ] );
 		}
 
 		protected function receiver_errorHandler( event : RedisErrorEvent ) : void
@@ -334,6 +341,7 @@ package com.hs.redisutil.model
 		protected function redis_connectedHandler( event : Event ) : void
 		{
 			appendLog( ">> connected: " + _redis.host + ":" + _redis.port );
+			redis.execute( "client" , [ "setname" , "redis-util:" + _uid ] );
 		}
 
 		protected function redis_disconnectedHandler( event : Event ) : void
