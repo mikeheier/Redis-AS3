@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application creationComplete="init();"
+	height="100%"
+	minHeight="600"
+	minWidth="955"
+	width="100%"
+	xmlns:fx="http://ns.adobe.com/mxml/2009"
+	xmlns:mx="library://ns.adobe.com/flex/mx"
+	xmlns:s="library://ns.adobe.com/flex/spark">
+
+	<fx:Script>
+		<![CDATA[
+			import com.hs.apis.redis.Redis;
+			import com.hs.apis.redis.events.RedisResultEvent;
+			import mx.collections.ArrayCollection;
+
+
+			//=================================
+			// private properties 
+			//=================================
+
+			[Bindable] private var _publisher : Redis;
+
+			[Bindable] private var _receiver : Redis;
+
+			[Bindable] private var channels : ArrayCollection = new ArrayCollection( [ "channel-1" , "channel-2" , "channel-3" ] );
+
+			//=================================
+			// public methods 
+			//=================================
+
+			public function init() : void
+			{
+				_publisher = new Redis();
+				_receiver = new Redis();
+				connect();
+			}
+
+			//=================================
+			// protected methods 
+			//=================================
+
+			protected function addChannelBtn_clickHandler( event : MouseEvent ) : void
+			{
+				var channel : String = channelInput.text;
+
+				if( channel && channels.getItemIndex( channel ) === -1 )
+				{
+					channelInput.text = "";
+					channels.addItem( channel );
+					_receiver.subscribe( channel );
+				}
+			}
+
+			protected function connect() : void
+			{
+				var host : String = hostInput.text;
+				var port : int = int( portInput.text );
+
+				_receiver.removeEventListener( RedisResultEvent.RESULT , receiver_reaultHandler );
+				_receiver.removeEventListener( "connected" , receiver_connectedHandler );
+
+				if( host && port )
+				{
+					_publisher.init( host , port );
+					_publisher.connect();
+
+					_receiver.init( host , port );
+					_receiver.connect();
+					_receiver.addEventListener( RedisResultEvent.RESULT , receiver_reaultHandler );
+					_receiver.addEventListener( "connected" , receiver_connectedHandler );
+				}
+			}
+
+			protected function connectBtn_clickHandler( event : MouseEvent ) : void
+			{
+				connect();
+			}
+
+			protected function receiver_connectedHandler( event : Event ) : void
+			{
+				_receiver.removeEventListener( "connected" , receiver_connectedHandler );
+				_receiver.subscribe.apply( null , channels.toArray() );
+
+				if( channelSelection.selectedIndex === -1 )
+					channelSelection.selectedIndex = 0;
+			}
+
+			protected function receiver_reaultHandler( event : RedisResultEvent ) : void
+			{
+				for( var i : uint = 0 ; i < event.result.length ; i++ )
+				{
+					/**
+					 * EXAMPLE
+					 result	[] (@846a271)
+					 [0]	"message" //type
+					 [1]	"chan-1" //channel
+					 [2]	"hello world!" //data
+					 length	*/
+					var result : Array = event.result[ i ].result;
+
+					if( result[ 0 ] != "message" )
+						continue;
+
+					output.text += "[" + result[ 1 ] + "] >> " + result[ 2 ] + "\n";
+				}
+			}
+
+			protected function sendBtn_clickHandler( event : MouseEvent ) : void
+			{
+				var msg : String = message.text;
+				var channel : String = channelSelection.selectedItem;
+
+				if( msg && channel )
+				{
+					_publisher.publish( channel , msg );
+					message.text = "";
+				}
+			}
+		]]>
+	</fx:Script>
+
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+
+	<s:HGroup paddingBottom="20"
+		paddingLeft="20"
+		paddingRight="20"
+		paddingTop="20"
+		width="100%">
+
+		<s:VGroup width="50%">
+
+			<s:HGroup>
+
+				<s:HGroup gap="1">
+
+					<s:TextInput id="hostInput"
+						prompt="host"
+						text="127.0.0.1"
+						width="80" />
+
+					<s:TextInput id="portInput"
+						prompt="port"
+						text="6379"
+						width="40" />
+				</s:HGroup>
+
+				<s:Button id="connectBtn"
+					click="connectBtn_clickHandler(event);"
+					label="Connect" />
+
+				<s:Ellipse height="20"
+					width="20">
+
+					<s:fill>
+
+						<s:SolidColor color="{_publisher.connected ? 0x00FF00 : 0xFF0000 }" />
+					</s:fill>
+				</s:Ellipse>
+			</s:HGroup>
+
+			<s:HGroup enabled="{_publisher.connected}">
+
+				<s:TextInput id="channelInput"
+					prompt="Channel Name" />
+
+				<s:Button id="addChannelBtn"
+					click="addChannelBtn_clickHandler(event);"
+					label="Add" />
+			</s:HGroup>
+
+			<s:VGroup enabled="{_publisher.connected}">
+
+				<s:TextArea id="message"
+					prompt="Enter Message"
+					width="100%" />
+
+				<s:HGroup>
+
+					<s:ComboBox id="channelSelection"
+						dataProvider="{ channels }"
+						prompt="Select Channel" />
+
+					<s:Button id="sendBtn"
+						click="sendBtn_clickHandler(event);"
+						label="Send" />
+				</s:HGroup>
+			</s:VGroup>
+		</s:VGroup>
+
+		<s:Group height="100%"
+			width="50%">
+
+			<s:Rect height="100%"
+				width="100%">
+
+				<s:stroke>
+
+					<s:SolidColorStroke weight="1" />
+				</s:stroke>
+			</s:Rect>
+
+			<s:RichText id="output"
+				bottom="5"
+				height="100%"
+				left="10"
+				right="10"
+				top="5"
+				width="100%" />
+		</s:Group>
+	</s:HGroup>
+
+</s:Application>
